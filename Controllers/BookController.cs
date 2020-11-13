@@ -9,6 +9,7 @@ using BookLoan.Models;
 using BookLoan.Data;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using BookLoan.Services;
 
 using Microsoft.AspNetCore.Authorization;
@@ -23,10 +24,14 @@ namespace BookLoan.Controllers
     {
         ApplicationDbContext _db;
         IBookService _bookService;
+        private readonly ILogger _logger;
 
-        public BookController(ApplicationDbContext db, IBookService bookService)
+        public BookController(ApplicationDbContext db,
+            ILogger<BookController> logger,
+            IBookService bookService)
         {
             _db = db;
+            _logger = logger;
             _bookService = bookService;
         }
 
@@ -69,6 +74,26 @@ namespace BookLoan.Controllers
         [HttpGet("api/[controller]/List")]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<List<BookViewModel>> List()
+        {
+            try
+            {
+                List<BookViewModel> bvm = new List<BookViewModel>();
+                var books = await _db.Books.ToListAsync();
+                return books;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+
+        /// <summary>
+        /// AllBooks()
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("api/[controller]/AllBooks")]
+        public async Task<List<BookViewModel>> AllBooks()
         {
             try
             {
@@ -164,7 +189,7 @@ namespace BookLoan.Controllers
         /// <param name="collection"></param>
         /// <returns></returns>
         [HttpPost("api/[controller]/Create")]
-        [ValidateAntiForgeryToken]
+        //[ValidateAntiForgeryToken]
         //public async Task<ActionResult> Create(IFormCollection collection)
         public async Task<ActionResult> Create([FromBody] BookViewModel model)
         {
@@ -201,9 +226,10 @@ namespace BookLoan.Controllers
                 //ViewData["BookID"] = new SelectList(_db.Books, "ID", "Author", book.ID);
                 return Ok(book); //  View(book);
             }
-            catch
+            catch (Exception ex)
             {
-                return BadRequest();
+                _logger.LogError(ex.Message);
+                return BadRequest("Cannot create book record.");
             }
         }
 
@@ -234,6 +260,58 @@ namespace BookLoan.Controllers
 
                 BookViewModel updatedata = new BookViewModel()
                 {
+                    ID = Id,
+                    Title = sTitle,
+                    Author = sAuthor,
+                    Edition = sEdition,
+                    Genre = sGenre,
+                    ISBN = sISBN,
+                    Location = sLocation,
+                    YearPublished = iYearPublished,
+                    DateUpdated = DateTime.Now
+                };
+
+                BookViewModel updated = await _bookService.UpdateBook(id, updatedata);
+                if (updated != null)
+                    return RedirectToAction("Details", "Book", new { id = updated.ID });
+
+                return Ok(true);
+
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
+        // POST: Book/Update/5
+        /// <summary>
+        /// Edit()
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="collection"></param>
+        /// <returns></returns>
+        [HttpPut("api/[controller]/Update/{id}")]
+        //[ValidateAntiForgeryToken]
+        public async Task<ActionResult> Update(int id, [FromBody] BookViewModel model)
+        {
+            try
+            {
+                // TODO: Add update logic here
+                int Id = model.ID; // System.Convert.ToInt32(collection["BookViewModel.ID"].ToString());
+                string sTitle = model.Title; //collection["BookViewModel.Title"].ToString();
+                string sAuthor = model.Author; // collection["BookViewModel.Author"].ToString();
+                int iYearPublished = System.Convert.ToInt32(model.YearPublished);
+                //System.Convert.ToInt32(collection["BookViewModel.YearPublished"].ToString());
+                string sGenre = model.Genre; // collection["BookViewModel.Genre"].ToString();
+                string sEdition = model.Edition; // collection["BookViewModel.Edition"].ToString();
+                string sISBN = model.ISBN; // collection["BookViewModel.ISBN"].ToString();
+                string sLocation = model.Location; // collection["BookViewModel.Location"].ToString();
+
+                BookViewModel updatedata = new BookViewModel()
+                {
+                    ID = Id,
                     Title = sTitle,
                     Author = sAuthor,
                     Edition = sEdition,
