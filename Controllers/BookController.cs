@@ -87,7 +87,6 @@ namespace BookLoan.Controllers
             }
         }
 
-
         /// <summary>
         /// AllBooks()
         /// </summary>
