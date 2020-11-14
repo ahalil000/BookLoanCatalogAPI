@@ -106,7 +106,6 @@ namespace BookLoan.Controllers
             }
         }
 
-
         /// <summary>
         /// GetChangedBooksList()
         /// Get books changed or added in the past 24 hours
